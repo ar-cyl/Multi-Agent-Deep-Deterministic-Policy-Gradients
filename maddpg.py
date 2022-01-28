@@ -70,6 +70,9 @@ class MADDPG:
         old_actions = T.cat([acts for acts in old_agents_actions],dim=1)
 
         for agent_idx, agent in enumerate(self.agents):
+            agent.actor.optimizer.zero_grad()
+        
+        for agent_idx, agent in enumerate(self.agents):
             critic_value_ = agent.target_critic.forward(states_, new_actions).flatten()
             critic_value_[dones[:,0]] = 0.0
             critic_value = agent.critic.forward(states, old_actions).flatten()
@@ -82,8 +85,8 @@ class MADDPG:
 
             actor_loss = agent.critic.forward(states, mu).flatten()
             actor_loss = -T.mean(actor_loss)
-            agent.actor.optimizer.zero_grad()
             actor_loss.backward(retain_graph=True)
-            agent.actor.optimizer.step()
 
+        for agent_idx, agent in enumerate(self.agents):
+            agent.actor.optimizer.step()
             agent.update_network_parameters()
