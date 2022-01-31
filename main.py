@@ -1,7 +1,7 @@
 import numpy as np
 from maddpg import MADDPG
 from buffer import MultiAgentReplayBuffer
-from make_env import make_env
+from utils import *
 
 def obs_list_to_state_vector(observation):
     state = np.array([])
@@ -11,18 +11,23 @@ def obs_list_to_state_vector(observation):
 
 if __name__ == '__main__':
     #scenario = 'simple'
-    scenario = 'simple_adversary'
-    env = make_env(scenario)
-    n_agents = env.n
+    env_file = '/mnt/d/prashant/UnityEnvironment.exe'
+    env = dodgeball_agents(env_file)
+    unityenv = env.set_env()
+    n_agents = env.nbr_agent*2 ##change: *2 if we count both teams
     actor_dims = []
     for i in range(n_agents):
-        actor_dims.append(env.observation_space[i].shape[0])
+        #actor_dims.append(env.observation_space[i].shape[0])
+        actor_dims.append(env.agent_obs_size)
+
     critic_dims = sum(actor_dims)
 
     # action space is a list of arrays, assume each agent has same action space
-    n_actions = env.action_space[0].n
+    #actions = env.action_space[0].n
+    actions = env.agent_action_size
+
     maddpg_agents = MADDPG(actor_dims, critic_dims, n_agents, n_actions, 
-                           fc1=64, fc2=64,  
+                           fc1=1024, fc2=1024,  
                            alpha=0.01, beta=0.01, scenario=scenario,
                            chkpt_dir='tmp/maddpg/')
 
@@ -46,11 +51,14 @@ if __name__ == '__main__':
         done = [False]*n_agents
         episode_step = 0
         while not any(done):
-            if evaluate:
-                env.render()
+            #if evaluate:
+                #env.render()
+
                 #time.sleep(0.1) # to slow down the action for the video
             actions = maddpg_agents.choose_action(obs)
-            obs_, reward, done, info = env.step(actions)
+            #obs_, reward, done, info = env.step(actions)
+            obs_, reward, done = env.step(actions) #no info in our implementation
+
 
             state = obs_list_to_state_vector(obs)
             state_ = obs_list_to_state_vector(obs_)
